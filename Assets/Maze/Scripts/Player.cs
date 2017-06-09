@@ -11,10 +11,12 @@ public class Player : MonoBehaviour {
 		camera = cam;
 	}
 
-	public void SetLocation (Transform mazeTransform, IntVector2 coordinates) {
-		currentCell = cell;
-		newCell.transform.localPosition = new Vector3(coordinates.x - size.x * 0.5f + 0.5f, 0f, coordinates.z - size.z * 0.5f + 0.5f);
+	public void SetLocation (MazeCell cell) {
+		transform.parent = cell.transform.parent;
 		transform.localPosition = cell.transform.localPosition;
-		camera.transform.localPosition = cell.transform.localPosition;
+		Vector3 correction = new Vector3 (1.1f, 0f, -.5f);
+		transform.localPosition = transform.localPosition + correction;
+		//camera.transform.parent = transform.parent;
+		camera.transform.localPosition = transform.localPosition;
 	}
 }

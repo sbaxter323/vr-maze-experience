@@ -50,7 +50,9 @@ public class Waypoint : MonoBehaviour
 	[Header("Hide Distance")]
 	public float threshold						= 0.125f;
 
-
+    // Add reference to Maze in order to set up dynamic waypoint generation
+	public Maze maze;
+	public MazeCell cell;
 
 	void Awake()
 	{		
@@ -130,7 +132,11 @@ public class Waypoint : MonoBehaviour
 		
 		_audio_source.Play();
 
+		// Generate new waypoints
+		maze.generateWaypoints(cell);
+
 		Camera.main.transform.position 	= gameObject.transform.position;
+
 	}
 
 

@@ -76,5 +76,17 @@ public class MazeCell : MonoBehaviour {
 		return true;
 	}
 
+	public MazeCell[] getAccessibleNeighbors() {
+		MazeCell[] accessibleNeighbors = new MazeCell[MazeDirections.Count];
+
+		for (int i = 0; i < edges.Length; i++) {
+			if (edges [i] != null) {
+				if (edges [i] is MazePassage) {
+					accessibleNeighbors [i] = edges [i].otherCell;
+				}
+			}
+		}
+		return accessibleNeighbors;
+	}
 
 }
