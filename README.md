@@ -2,4 +2,3 @@
 
 # Implemented Trémaux's algorithm as descrbibed in: https://en.wikipedia.org/wiki/Maze_solving_algorithm
 
-# BU CS Maze Solver - http://www.cs.bu.edu/teaching/alg/maze/

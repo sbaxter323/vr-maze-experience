@@ -19,6 +19,10 @@ public class MazeCell : MonoBehaviour {
 	public MazeCellEdge GetEdge (MazeDirection direction) {
 		return edges[(int)direction];
 	}
+
+	public MazeCellEdge GetEdge (int direction) {
+		return edges[direction];
+	}
 		
 	public bool IsFullyInitialized {
 		get {
@@ -47,6 +51,7 @@ public class MazeCell : MonoBehaviour {
 
 	}
 
+	// Try very basic rules for now and see how waypoints are added
 	public bool isTurn () {
 		int numPassages = 0;
 		ArrayList passageDirections = new ArrayList();
@@ -57,9 +62,8 @@ public class MazeCell : MonoBehaviour {
 				passageDirections.Add((int)currentEdge.direction);
 			}
 		}
-		// Try very basic rules for now and see how waypoints are added
-		if (numPassages < 2 && numPassages < 3) {
-			return false;
+		if (numPassages > 2) {
+			return true;
 		}
 
 		if (numPassages == 2) {
@@ -67,26 +71,39 @@ public class MazeCell : MonoBehaviour {
 			int secondDirection = (int)passageDirections [1];
 			if ((firstDirection + 1) % MazeDirections.Count == secondDirection) {
 				return true;
-			} else if ((firstDirection + 1) % MazeDirections.Count == secondDirection) {
+			} else if ((secondDirection + 1) % MazeDirections.Count == firstDirection) {
 				return true;
 			}
-
-			return false;
-		}
-		return true;
+		} 
+		return false;
 	}
 
-	public MazeCell[] getAccessibleNeighbors() {
+	public MazeCell[] getAccessibleNeighbors(int maxHops) {
 		MazeCell[] accessibleNeighbors = new MazeCell[MazeDirections.Count];
 
 		for (int i = 0; i < edges.Length; i++) {
-			if (edges [i] != null) {
-				if (edges [i] is MazePassage) {
-					accessibleNeighbors [i] = edges [i].otherCell;
-				}
-			}
+			accessibleNeighbors [i] = getLongestWaypointPath(edges[i].otherCell, i, maxHops);
 		}
 		return accessibleNeighbors;
+	}
+
+	private MazeCell getLongestWaypointPath(MazeCell cell, int dir, int max) {
+
+		if (cell == null)
+			return null;
+
+		if (cell.isTurn ())
+			return cell;
+		
+		MazeCellEdge nextCellEdge = cell.GetEdge(dir);
+		MazeCell nextCell = nextCellEdge.otherCell;
+
+		// Haven't reached max distance specified in settings, nextCell does exist and there is an open passage
+		if (max > 0 && nextCell != null && nextCellEdge is MazePassage)
+			return getLongestWaypointPath (nextCell, dir, max - 1);
+		else
+			return cell;
+						
 	}
 
 }

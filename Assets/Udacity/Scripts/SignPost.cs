@@ -4,8 +4,14 @@ using UnityEngine.SceneManagement;
 
 public class SignPost : MonoBehaviour
 {	
+	private GameManager manager;
+
+	public void setManager(GameManager gm) {
+		manager = gm;
+	}
+
 	public void ResetScene() 
 	{
-        // Reset the scene when the user clicks the sign post
+		manager.RestartGame ();
 	}
 }

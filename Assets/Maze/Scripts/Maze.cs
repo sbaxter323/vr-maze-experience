@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 
 public class Maze : MonoBehaviour {
@@ -10,10 +11,8 @@ public class Maze : MonoBehaviour {
 	public MazeCell cellPrefab;
 	public MazePassage passagePrefab;
 	public MazeWall[] wallPrefabs;
-	public MazeDoor doorPrefab;
-	public GameObject solutionRoomPrefab;
+	public Door door;
 	public Waypoint waypointPrefab;
-	public GameObject keyPrefab;
 
 	//public MazeWaypoint waypointPrefab;
 	[Range(0f, 1f)]
@@ -24,6 +23,10 @@ public class Maze : MonoBehaviour {
 	public float generationStepDelay;
 	private MazeCell[,] cells;
 	private Waypoint[] waypoints;
+	private MazeCell[] coinCells;
+	private int maxWaypointHops;
+	private SignPost signpostInstance;
+	private int coinCount;
 
 
 	// Use this for initialization
@@ -37,7 +40,7 @@ public class Maze : MonoBehaviour {
 	}
 
 	//public IEnumerator Generate (Player playerInstance) {
-	public void Generate(Player playerInstance) {
+	public void Generate(Player playerInstance, Key keyInstance, MazeSolutionRoom solutionRoomInstance, Coin[] coinInstances, int numCoins, int maxHops, SignPost sp) {
 		WaitForSeconds delay = new WaitForSeconds (generationStepDelay);
 		cells = new MazeCell[size.x, size.z];
 		//waypoints = new Waypoint[size.x, size.z];
@@ -52,7 +55,10 @@ public class Maze : MonoBehaviour {
 		}
 
 		// Generate Waypoints, Coins, and Exit Room
-		DoFinalGenerationStep(playerInstance);
+		maxWaypointHops = maxHops;
+		signpostInstance = sp;
+		coinCount = numCoins;
+		DoFinalGenerationStep(playerInstance, keyInstance, solutionRoomInstance, coinInstances, numCoins);
 	}
 
 	private MazeCell CreateCell (IntVector2 coordinates) {
@@ -119,7 +125,7 @@ public class Maze : MonoBehaviour {
 		}
 	}
 
-	private void DoFinalGenerationStep (Player playerInstance) {
+	private void DoFinalGenerationStep (Player playerInstance, Key keyInstance, MazeSolutionRoom solutionRoomInstance, Coin[] coinInstances, int numCoins) {
 		playerInstance.SetLocation (cells[0, 0]);
 	
 		// Remove southern wall
@@ -129,39 +135,56 @@ public class Maze : MonoBehaviour {
 		solutionCell.SetEdge (MazeDirection.East, passage);
 
 		// Create Solution Room
-		GameObject solutionRoom = Instantiate (solutionRoomPrefab) as GameObject;
-		solutionRoom.transform.parent = this.transform;
-		solutionRoom.transform.localPosition = new Vector3 (solutionCell.coordinates.x - size.x * 0.5f + 0.5f + 3.2f, .5f, solutionCell.coordinates.z - size.z * 0.5f + 0.5f + 1.59f);	
+		solutionRoomInstance.transform.parent = this.transform;
+		solutionRoomInstance.transform.localPosition = new Vector3 (solutionCell.coordinates.x - size.x * 0.5f + 0.5f + 3.2f, .5f, solutionCell.coordinates.z - size.z * 0.5f + 0.5f + 1.59f);	
 
 		// Create the key
-		int keyXIndex = (int)Random.Range(2, size.x -2);
-		int keyZIndex = (int)Random.Range(2, size.z -2);
-
+		int keyXIndex = (int)Random.Range(2, size.x -1);
+		int keyZIndex = (int)Random.Range(2, size.z -1);
 		MazeCell keyCell = cells [keyXIndex, keyZIndex];
-		GameObject key = Instantiate (keyPrefab);
-		key.transform.localPosition = keyCell.transform.localPosition;
+		keyInstance.transform.localPosition = keyCell.transform.localPosition;
+		keyInstance.transform.Translate(new Vector3(0.0f, 0.0f, 0.5f));
 
 		// Generate dynamic waypoints for starting cell
 		waypoints = new Waypoint[MazeDirections.Count];
 		generateWaypoints(cells[0,0]);
-	}
 
-	/*private void addWaypoint(MazeCell currentCell) {
-		if (currentCell.isTurn () || ! isWaypointAccessible(currentCell.coordinates)) {
-			Waypoint waypoint = Instantiate (waypointPrefab);
-			waypoint.transform.parent = this.transform;
-			waypoint.transform.localPosition = new Vector3 (currentCell.coordinates.x - size.x * 0.5f + 0.5f, .5f, currentCell.coordinates.z - size.z * 0.5f + 0.5f);
-			waypoints[currentCell.coordinates.x, currentCell.coordinates.z] = waypoint;
+		// Generate Coins
+		int coinsToGenerate = numCoins, coinXIndex = (int)Random.Range (2, size.x - 1), coinZIndex = (int)Random.Range (2, size.z - 1);
+		MazeCell coinCell = cells[coinXIndex, coinZIndex];
+		bool uniqueCell;
+		coinCells = new MazeCell[coinsToGenerate];
+
+		for (coinsToGenerate = 0; coinsToGenerate < numCoins - 1; coinsToGenerate ++) {
+			uniqueCell = false;
+			while (uniqueCell == false) {
+				
+				int match = System.Array.IndexOf(coinCells, coinCell);
+
+				// If there is no match in existing keys and coordinates don't match the generated key, continue
+				Debug.Log ("match: " + match + "coinXIndex: " + coinXIndex + " coinZIndex: " + coinZIndex);
+				Debug.Log ("coinCells " + coinCells);
+				if ((match > -1) || (coinXIndex == keyCell.coordinates.x && coinZIndex == keyCell.coordinates.z)) {
+					coinXIndex = (int)Random.Range (2, size.x - 1);
+					coinZIndex = (int)Random.Range (2, size.z - 1);
+					coinCell = cells [coinXIndex, coinZIndex];
+				} else {
+					uniqueCell = true;
+				}
+			}
+					 
+			// Add cell position to prevent overwrites, update coin instance to cell position
+			Debug.Log ("coinsToGenerate: " + coinsToGenerate + "coinXIndex: " + coinXIndex + " coinZIndex: " + coinZIndex);
+			coinCells[coinsToGenerate] = coinCell;
+			coinInstances [coinsToGenerate].transform.localPosition = coinCell.transform.localPosition;
+			// Shift Coin To Left
+			coinInstances[coinsToGenerate].transform.Translate(new Vector3(0.0f, 0.0f, 0.5f));
 		}
-	}*/
-
-	private bool isWaypointAccessible(IntVector2 coordinates) {
-		return true;
 	}
 		
-
 	private void CreatePassage (MazeCell cell, MazeCell otherCell, MazeDirection direction) {
-		MazePassage prefab = Random.value < doorProbability ? doorPrefab : passagePrefab;
+		//MazePassage prefab = Random.value < doorProbability ? doorPrefab : passagePrefab;
+		MazePassage prefab = passagePrefab;
 		MazePassage passage = Instantiate(prefab) as MazePassage;
 		passage.Initialize(cell, otherCell, direction);
 		passage = Instantiate(prefab) as MazePassage;
@@ -196,16 +219,17 @@ public class Maze : MonoBehaviour {
 		return newRoom;
 	}
 
+	// Destroy existing waypoints from previous cell and add waypoints for each accessible neighboring cell 
 	public void generateWaypoints(MazeCell cell) {
-		
+
 		for (int i = 0; i < waypoints.Length; i++) {
 			if (waypoints [i] != null) {
 				Destroy (waypoints [i].gameObject);
 				waypoints [i] = null;
 			}
 		}
-
-		MazeCell[] accessibleNeighbors = cell.getAccessibleNeighbors();
+			
+		MazeCell[] accessibleNeighbors = cell.getAccessibleNeighbors(maxWaypointHops);
 
 		for (int j = 0; j < accessibleNeighbors.Length; j++) {
 			if (accessibleNeighbors [j] != null) {
@@ -220,5 +244,9 @@ public class Maze : MonoBehaviour {
 			
 	}
 
-
+	public void updateSolutionCanvas() {
+		coinCount--;
+		signpostInstance.GetComponent<UnityEngine.UI.Text> ().text = "You Win! Coins Remaining: " + coinCount;
+	}
+		
 }
