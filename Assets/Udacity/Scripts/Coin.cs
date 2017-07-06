@@ -6,20 +6,22 @@ public class Coin : MonoBehaviour
 {
 	public GameObject coinPoofPrefab;
 	private Maze maze;
+	private int coinIndex;
 
     public void OnCoinClicked() {
-        // Instantiate the CoinPoof Prefab where this coin is located
-        // Make sure the poof animates vertically
-        // Destroy this coin. Check the Unity documentation on how to use Destroy
 		GameObject poof = Instantiate(coinPoofPrefab) as GameObject;
 		poof.transform.localPosition = this.transform.localPosition;
-		maze.updateSolutionCanvas();
+		maze.coinGrabbed(coinIndex);
 		Destroy (this.gameObject);
 
     }
 
 	public void setMaze(Maze m) {
 		maze = m;
+	}
+
+	public void setCoinIndex(int ci) {
+		coinIndex = ci;
 	}
 
 	void Update()

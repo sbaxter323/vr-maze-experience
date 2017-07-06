@@ -12,6 +12,8 @@ public class SignPost : MonoBehaviour
 
 	public void ResetScene() 
 	{
-		manager.RestartGame ();
+		if (manager.getMaze().getCoinCount() == 0) {
+			manager.RestartGame ();
+		}
 	}
 }

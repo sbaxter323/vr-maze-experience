@@ -46,6 +46,7 @@ public class GameManager : MonoBehaviour {
 		for (int i = 0; i < numCoins; i++) {
 			coinInstance = Instantiate (coinPrefab) as Coin;
 			coinInstance.setMaze (mazeInstance);
+			coinInstance.setCoinIndex (i);
 			coinInstances [i] = coinInstance;
 		}
 		mazeInstance.Generate (playerInstance, keyInstance, solutionRoomInstance, coinInstances, numCoins, maxWaypointHops, signpostInstance);
@@ -72,5 +73,7 @@ public class GameManager : MonoBehaviour {
 		BeginGame();
 	}
 
-
+	public Maze getMaze() {
+		return mazeInstance;
+	}
 }

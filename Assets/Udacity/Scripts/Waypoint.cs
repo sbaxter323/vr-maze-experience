@@ -133,7 +133,9 @@ public class Waypoint : MonoBehaviour
 		_audio_source.Play();
 
 		// Generate new waypoints
-		maze.generateWaypoints(cell);
+		if (cell != null) {
+			maze.generateWaypoints (cell);
+		}
 
 		Camera.main.transform.position 	= gameObject.transform.position;
 

@@ -22,9 +22,9 @@ public class Key : MonoBehaviour
 		transform.Rotate(rotationVector * Time.deltaTime);
 
 		// Move Up and Down
-		if (transform.localPosition.y > .2) {
+		if (transform.localPosition.y > .05) {
 			transformDirection = -1;
-		} else if (transform.localPosition.y < -.2) {
+		} else if (transform.localPosition.y < -.05) {
 			transformDirection = 1;
 		}
 		Vector3 transformVector = new Vector3 (0.0f, 0.05f * transformDirection * Time.deltaTime, 0.0f);

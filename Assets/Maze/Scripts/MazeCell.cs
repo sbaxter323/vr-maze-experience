@@ -82,28 +82,35 @@ public class MazeCell : MonoBehaviour {
 		MazeCell[] accessibleNeighbors = new MazeCell[MazeDirections.Count];
 
 		for (int i = 0; i < edges.Length; i++) {
-			accessibleNeighbors [i] = getLongestWaypointPath(edges[i].otherCell, i, maxHops);
+			if (edges[i] is MazePassage)
+				accessibleNeighbors [i] = getLongestWaypointPath(edges[i].otherCell, edges[i].direction, maxHops);
 		}
 		return accessibleNeighbors;
 	}
 
-	private MazeCell getLongestWaypointPath(MazeCell cell, int dir, int max) {
 
+	private MazeCell getLongestWaypointPath(MazeCell cell, MazeDirection dir, int max) {
 		if (cell == null)
 			return null;
 
-		if (cell.isTurn ())
-			return cell;
-		
-		MazeCellEdge nextCellEdge = cell.GetEdge(dir);
-		MazeCell nextCell = nextCellEdge.otherCell;
+		if (max == 0)
+			return null;
 
-		// Haven't reached max distance specified in settings, nextCell does exist and there is an open passage
-		if (max > 0 && nextCell != null && nextCellEdge is MazePassage)
-			return getLongestWaypointPath (nextCell, dir, max - 1);
-		else
+		MazeCellEdge cellEdge = cell.GetEdge (dir);
+		MazeCell nextCell = cellEdge.otherCell, recursiveCell;
+
+
+		if (!cell.isTurn () && cellEdge is MazePassage) {
+			recursiveCell = getLongestWaypointPath (nextCell, dir, max - 1);
+			//Debug.Log ("Maze Cell: " + cell + " RecursiveCell: " + recursiveCell);
+			if (recursiveCell != null)
+				return recursiveCell;
+			else
+				return cell;
+		} else {
 			return cell;
-						
+		}
+
 	}
 
 }

@@ -63,7 +63,9 @@ public class Maze : MonoBehaviour {
 
 	private MazeCell CreateCell (IntVector2 coordinates) {
 		MazeCell newCell = Instantiate(cellPrefab) as MazeCell;
-		cells[coordinates.x, coordinates.z] = newCell;
+		if (ContainsCoordinates(coordinates)) {
+			cells [coordinates.x, coordinates.z] = newCell;
+		}
 		newCell.coordinates = coordinates;
 		newCell.name = "Maze Cell " + coordinates.x + ", " + coordinates.z;
 		newCell.transform.parent = transform;
@@ -126,9 +128,7 @@ public class Maze : MonoBehaviour {
 	}
 
 	private void DoFinalGenerationStep (Player playerInstance, Key keyInstance, MazeSolutionRoom solutionRoomInstance, Coin[] coinInstances, int numCoins) {
-		playerInstance.SetLocation (cells[0, 0]);
-	
-		// Remove southern wall
+		// Remove eastern exit wall
 		MazeCell solutionCell = cells[size.x - 1, size.z - 1];
 		MazePassage passage = Instantiate(passagePrefab) as MazePassage;
 		Destroy(solutionCell.GetEdge(MazeDirection.East).gameObject);
@@ -143,11 +143,8 @@ public class Maze : MonoBehaviour {
 		int keyZIndex = (int)Random.Range(2, size.z -1);
 		MazeCell keyCell = cells [keyXIndex, keyZIndex];
 		keyInstance.transform.localPosition = keyCell.transform.localPosition;
-		keyInstance.transform.Translate(new Vector3(0.0f, 0.0f, 0.5f));
-
-		// Generate dynamic waypoints for starting cell
-		waypoints = new Waypoint[MazeDirections.Count];
-		generateWaypoints(cells[0,0]);
+		// Adjustment within cell
+		keyInstance.transform.Translate(new Vector3(-.9f, 0.0f, 0.4f));
 
 		// Generate Coins
 		int coinsToGenerate = numCoins, coinXIndex = (int)Random.Range (2, size.x - 1), coinZIndex = (int)Random.Range (2, size.z - 1);
@@ -155,15 +152,12 @@ public class Maze : MonoBehaviour {
 		bool uniqueCell;
 		coinCells = new MazeCell[coinsToGenerate];
 
-		for (coinsToGenerate = 0; coinsToGenerate < numCoins - 1; coinsToGenerate ++) {
+		for (coinsToGenerate = 0; coinsToGenerate < numCoins; coinsToGenerate ++) {
 			uniqueCell = false;
 			while (uniqueCell == false) {
 				
 				int match = System.Array.IndexOf(coinCells, coinCell);
 
-				// If there is no match in existing keys and coordinates don't match the generated key, continue
-				Debug.Log ("match: " + match + "coinXIndex: " + coinXIndex + " coinZIndex: " + coinZIndex);
-				Debug.Log ("coinCells " + coinCells);
 				if ((match > -1) || (coinXIndex == keyCell.coordinates.x && coinZIndex == keyCell.coordinates.z)) {
 					coinXIndex = (int)Random.Range (2, size.x - 1);
 					coinZIndex = (int)Random.Range (2, size.z - 1);
@@ -174,12 +168,31 @@ public class Maze : MonoBehaviour {
 			}
 					 
 			// Add cell position to prevent overwrites, update coin instance to cell position
-			Debug.Log ("coinsToGenerate: " + coinsToGenerate + "coinXIndex: " + coinXIndex + " coinZIndex: " + coinZIndex);
 			coinCells[coinsToGenerate] = coinCell;
 			coinInstances [coinsToGenerate].transform.localPosition = coinCell.transform.localPosition;
-			// Shift Coin To Left
-			coinInstances[coinsToGenerate].transform.Translate(new Vector3(0.0f, 0.0f, 0.5f));
+			// Adjustment within cell
+			coinInstances[coinsToGenerate].transform.Translate(new Vector3(.7f, 0.8f, -.5f));
+			setSignPostText();
 		}
+
+		// Initial Player Setup
+		MazeCell startingCell = CreateCell (new IntVector2(0, -1));
+		startingCell.Initialize (CreateRoom (-1));
+		CreateWall (startingCell, null, MazeDirection.East);
+		CreateWall (startingCell, null, MazeDirection.South);
+		CreateWall (startingCell, null, MazeDirection.West);
+		playerInstance.SetLocation (startingCell);
+
+
+		// Remove southern entrace wall and connect to 0,0
+		MazeCell firstCell = cells[0,0]; 
+		Destroy(firstCell.GetEdge(MazeDirection.South).gameObject);
+		CreatePassageInSameRoom (startingCell, firstCell, MazeDirection.North);
+		MazePassage startingPassage = Instantiate(passagePrefab) as MazePassage;
+
+		// Generate dynamic waypoints for starting cell
+		waypoints = new Waypoint[MazeDirections.Count];
+		generateWaypoints(startingCell);
 	}
 		
 	private void CreatePassage (MazeCell cell, MazeCell otherCell, MazeDirection direction) {
@@ -222,6 +235,7 @@ public class Maze : MonoBehaviour {
 	// Destroy existing waypoints from previous cell and add waypoints for each accessible neighboring cell 
 	public void generateWaypoints(MazeCell cell) {
 
+
 		for (int i = 0; i < waypoints.Length; i++) {
 			if (waypoints [i] != null) {
 				Destroy (waypoints [i].gameObject);
@@ -230,13 +244,13 @@ public class Maze : MonoBehaviour {
 		}
 			
 		MazeCell[] accessibleNeighbors = cell.getAccessibleNeighbors(maxWaypointHops);
-
 		for (int j = 0; j < accessibleNeighbors.Length; j++) {
 			if (accessibleNeighbors [j] != null) {
 				Waypoint waypoint = Instantiate (waypointPrefab);
 				waypoint.maze = this;
 				waypoint.cell = accessibleNeighbors [j];
 				waypoint.transform.parent = this.transform;
+				// Adjustment within cell
 				waypoint.transform.localPosition = new Vector3 (accessibleNeighbors[j].coordinates.x - size.x * 0.5f + 0.5f, .5f, accessibleNeighbors[j].coordinates.z - size.z * 0.5f + 0.5f);
 				waypoints[j] = waypoint;
 			}
@@ -244,9 +258,43 @@ public class Maze : MonoBehaviour {
 			
 	}
 
-	public void updateSolutionCanvas() {
+	public int getCoinCount(){
+		return coinCount;
+	}
+
+	public void coinGrabbed(int coinIndex) {
+		coinCells [coinIndex] = null;
 		coinCount--;
-		signpostInstance.GetComponent<UnityEngine.UI.Text> ().text = "You Win! Coins Remaining: " + coinCount;
+		setSignPostText ();
+
 	}
 		
+	public void setSignPostText() {
+		switch (coinCount)
+		{
+		case 0:
+			signpostInstance.GetComponent<UnityEngine.UI.Text> ().text = "You Win! \n Click here to restart!";
+			signpostInstance.GetComponent<UnityEngine.UI.Text> ().color = Color.green;
+			signpostInstance.GetComponent<UnityEngine.UI.Text> ().fontSize = 4;
+			break;
+		case 1:
+			signpostInstance.GetComponent<UnityEngine.UI.Text> ().text = "So Close! 1 Coin Remaining.";
+			signpostInstance.GetComponent<UnityEngine.UI.Text> ().color = Color.cyan;
+			signpostInstance.GetComponent<UnityEngine.UI.Text> ().fontSize = 3;
+
+			break;
+		case 2:
+			signpostInstance.GetComponent<UnityEngine.UI.Text> ().text = "Almost there! 2 Coins Remaining.";
+			signpostInstance.GetComponent<UnityEngine.UI.Text> ().color = Color.magenta;
+			signpostInstance.GetComponent<UnityEngine.UI.Text> ().fontSize = 3;
+			break;
+		default:
+			signpostInstance.GetComponent<UnityEngine.UI.Text> ().text = "Keep going! Coins Remaining: \n" + coinCount;
+			signpostInstance.GetComponent<UnityEngine.UI.Text> ().color = Color.red;
+			signpostInstance.GetComponent<UnityEngine.UI.Text> ().fontSize = 3;
+
+			break;
+		}
+	}
+				
 }
